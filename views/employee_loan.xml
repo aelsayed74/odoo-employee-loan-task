@@ -1,0 +1,133 @@
+<odoo>
+    <record id="employee_loan_view_tree" model="ir.ui.view">
+    <field name="name">employee loan view tree</field>
+    <field name="model">employee.loan</field>
+    <field name="arch" type="xml">
+        <tree string="Employee Loan" 
+              multi_edit="1" 
+              sample="1" 
+              decoration-muted="state == 'draft'"
+              decoration-warning="state == 'panding'"
+              decoration-info="state == 'approved'"
+              decoration-success="state == 'paid'"
+              decoration-danger="state == 'rejected'"> 
+            
+            <field name="employee_id" string="Name" widget="many2one_avatar" class="text-center"/>
+            <field name="department_id" optional="show" class="text-center"/>
+            <field name="job_id" optional="hide" class="text-center"/>
+            <field name="start_at" optional="show" readonly="1" class="text-center"/>
+            <field name="loan_amount" sum="Total" widget="monetary" decoration-bf="1" class="text-center"/>
+            <field name="state" widget="badge" 
+                   decoration-muted="state == 'draft'"
+                   decoration-warning="state == 'panding'"
+                   decoration-info="state == 'approved'"
+                   decoration-success="state == 'paid'"
+                   decoration-danger="state == 'rejected'" />
+        </tree>
+    </field>
+    </record>
+    <record id="employee_loan_view_form" model="ir.ui.view">
+    <field name="name">employee.loan.view.form</field>
+    <field name="model">employee.loan</field>
+    <field name="arch" type="xml">
+        <form string="Employee Loan">
+            <header>
+                <button name="action_panding" type="object" class="btn-warning" string="Panding"
+                        invisible="state in ('paid','rejected','panding')"/>
+                
+                <button name="action_approved" type="object" class="btn-success" string="Approve"
+                        invisible="state in ('paid','rejected','approved')"/>
+                
+                <button name="action_paid" type="object" class="btn-info" string="Paid"
+                        invisible="state != 'approved'"/>
+                
+                <button name="action_reject_loan" type="object" class="btn-danger" string="Reject"
+                        invisible="state in ('approved','paid','rejected')"/>
+                
+                <button name="action_draft" type="object" string="Draft" class="btn-secondary"
+                        invisible="state in ('draft',)"/>
+                
+                <field name="state" widget="statusbar" statusbar_visible="draft,panding,approved,paid"/>
+            </header>
+            <sheet>
+                <div class="oe_title">
+                    <h1>
+                        <field name="employee_id" placeholder="Select Employee..." options="{'no_create': True}" required="1"/>
+                    </h1>
+                </div>
+                <group>
+                    <group string="Employee Details">
+                        <field name="department_id" />
+                        <field name="job_id" />
+                        
+                        <field name="reject_reason" invisible="state != 'rejected'" required="state == 'rejected'"/>
+                    </group>
+                    
+                    <group string="Loan Details">
+                        <field name="state"/>
+                        <field name="loan_amount"/>
+                        <field name="start_at"/>
+                        <field name="installments_nums"/>
+                    </group>
+                    <group string="Accounting Information">
+                        <field name="journal_id" string="Payment Journal" readonly="state=='approved'"/>
+                        <field name="loan_account_id" string="Loan Account" readonly="state=='approved'"/>
+                        <field name="move_id" string="Journal Entry"/>
+                    </group>
+                </group>
+                <notebook>
+                    <page string="Loan Lines" autofocus="autofocus">
+                        <field name="line_ids" nolabel="1">
+                            <tree class="oe_loan_tree_center" editable="bottom">
+                                <field name="installments_num" width="15%"/>
+                                <field name="installment_date" width="30%"/>
+                                <field name="amount" class="text-center"/>
+                                <field name="state" width="25%"/>
+                            </tree>
+                        </field>
+                    </page>
+                </notebook>
+            </sheet>
+            <div class="oe_chatter">
+                <field name="message_follower_ids"/>
+                <field name="activity_ids"/>
+                <field name="message_ids"/>
+            </div>
+        </form> 
+    </field>
+    </record>
+    <record id="employee_loan_action" model="ir.actions.act_window">
+        <field name="name">Employee Loan</field>
+        <field name="res_model">employee.loan</field>
+        <field name="view_mode">tree,form</field>
+        <field name="context">{'search_default_group_state': 1}</field>    
+    </record>
+    <record id="employee_load_view_search" model="ir.ui.view">
+        <field name="name">employee load search</field>
+        <field name="model">employee.loan</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="employee_id" string='Name'/>
+                <filter name="is_panding" string="Is Panding" domain="[('state','=','panding')]"/>
+                <filter name="group_state" string="Status" context="{'group_by':'state'}"/>
+            </search> 
+        </field>
+    </record>
+    <record id="Installment_payment_date_cron" model="ir.cron">
+        <field name="name">employee_loan: check installment payment date</field>
+        <field name="model_id" ref="model_employee_loan"/>
+        <field name="state">code</field>
+        <field name="code">model.installment_payment_date()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">months</field>
+        <field name="numbercall">-1</field>
+        <field name="active">True</field>
+    </record>
+    <menuitem
+        id="employee_loan_menu_item"
+        name="Employee Loans"
+        parent="employee_loan_root_menu"
+        action="employee_loan_action"
+        sequence="10"
+    />
+</odoo>

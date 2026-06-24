@@ -1,0 +1,16 @@
+# Python bytecode
+*.pyc
+*.pyo
+*__pycache__/
+
+# Odoo log files and temporary data
+*.log
+*.conf
+
+# IDEs settings
+.vscode/
+.idea/
+
+# OS temporary files
+.DS_Store
+Thumbs.db

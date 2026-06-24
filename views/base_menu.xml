@@ -1,0 +1,12 @@
+<odoo>
+    <menuitem
+        id = "employee_loan_root_menu"
+        name = "Employee Loan"
+    />
+    <menuitem
+        id = "reports_menu"
+        name = "Reports"
+        parent = "employee_loan_root_menu"
+        sequence="100"
+    />
+</odoo>

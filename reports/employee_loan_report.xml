@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_employee_loan_agreement" model="ir.actions.report">
+        <field name="name">Loan Agreement</field>
+        <field name="model">employee.loan</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">employee_loan_task.report_loan_agreement_template</field>
+        <field name="report_file">employee_loan_task.report_loan_agreement_template</field>
+        <field name="binding_model_id" ref="model_employee_loan"/>
+        <field name="binding_type">report</field>
+    </record>
+    <template id="report_loan_agreement_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page" style="direction: ltr; text-align: left; font-family: 'Arial', sans-serif;">
+                        
+                        <div class="text-center" style="margin-bottom: 30px;">
+                            <h2 class="text-muted">Employee Loan Agreement</h2>
+                        </div>
+
+                        <div class="row" style="margin-bottom: 20px;">
+                            <div class="col-12">
+                                <h4 style="color: #1f4e78; border-bottom: 1px solid #1f4e78; padding-bottom: 5px;">First: Personal and Professional Data</h4>
+                                <table class="table table-bordered" style="width: 100%; margin-top: 10px;">
+                                    <tr>
+                                        <td style="width: 25%; background-color: #f2f2f2; font-weight: bold;">Employee Name:</td>
+                                        <td style="width: 25%;"><span t-field="o.employee_id.name"/></td>
+                                        <td style="width: 25%; background-color: #f2f2f2; font-weight: bold;">Job Number:</td>
+                                        <td style="width: 25%;"><span t-field="o.employee_id.id"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="background-color: #f2f2f2; font-weight: bold;">Department / Admin:</td>
+                                        <td><span t-field="o.employee_id.department_id.name"/></td>
+                                        <td style="background-color: #f2f2f2; font-weight: bold;">Job Title:</td>
+                                        <td><span t-field="o.employee_id.job_id.name"/></td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="row" style="margin-bottom: 20px;">
+                            <div class="col-12">
+                                <h4 style="color: #1f4e78; border-bottom: 1px solid #1f4e78; padding-bottom: 5px;">Second: Details of the Financial Loan</h4>
+                                <table class="table table-bordered" style="width: 100%; margin-top: 10px;">
+                                    <tr>
+                                        <td style="width: 25%; background-color: #f2f2f2; font-weight: bold;">Total Loan Amount:</td>
+                                        <td style="width: 25%; font-weight: bold; color: #2e7d32;">
+                                            <span t-field="o.loan_amount"/>
+                                        </td>
+                                        <td style="width: 25%; background-color: #f2f2f2; font-weight: bold;">Number of Installments:</td>
+                                        <td style="width: 25%;"><span t-field="o.installments_nums"/> Monthly Installments</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="background-color: #f2f2f2; font-weight: bold;">Start Date:</td>
+                                        <td><span t-field="o.start_at"/></td>
+                                        <td style="background-color: #f2f2f2; font-weight: bold;">Current Order Status:</td>
+                                        <td><span t-field="o.state"/></td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="row" style="margin-bottom: 30px;">
+                            <div class="col-12">
+                                <h4 style="color: #1f4e78; border-bottom: 1px solid #1f4e78; padding-bottom: 5px;">Third: Legal Declaration and Undertaking</h4>
+                                <p style="font-size: 14px; line-height: 1.8; text-align: justify; margin-top: 10px;">
+                                    I, the aforementioned employee, being of sound mind and legally competent, hereby acknowledge
+                                    that I have received from the company the advance payment amount specified above, in the amount of
+                                    (<span t-field="o.loan_amount"/> ) as an interest-free loan. I hereby undertake to repay the full amount
+                                    in regular monthly installments. I also grant the company's Human Resources and Finance Department full and
+                                    irrevocable authorization to deduct the monthly installments, as detailed in the installment schedule below,
+                                    directly and automatically from my monthly salary and benefits upon their due date until the debt is fully repaid.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="row" style="margin-bottom: 40px;">
+                            <div class="col-12">
+                                <h4 style="color: #1f4e78; border-bottom: 1px solid #1f4e78; padding-bottom: 5px;">Fourth: Installment Payment Schedule</h4>
+                                <table class="table table-striped table-bordered text-center" style="width: 100%; margin-top: 10px;">
+                                    <thead style="background-color: #1f4e78; color: white;">
+                                        <tr>
+                                            <th style="width: 15%; text-align: center;">#</th>
+                                            <th style="width: 35%; text-align: center;">Due Date</th>
+                                            <th style="width: 25%; text-align: center;">Amount</th>
+                                            <th style="width: 25%; text-align: center;">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-set="counter" t-value="1"/>
+                                        <t t-foreach="o.line_ids" t-as="line">
+                                            <tr>
+                                                <td><t t-out="counter"/></td>
+                                                <td><span t-field="line.installment_date"/></td>
+                                                <td><span t-field="line.amount"/></td>
+                                                <td>
+                                                    <span t-if="line.state == 'paid'" class="badge bg-success" style="padding: 5px 10px;">Paid</span>
+                                                    <span t-if="line.state != 'paid'" class="badge bg-warning" style="padding: 5px 10px;">Due</span>
+                                                </td>
+                                            </tr>
+                                            <t t-set="counter" t-value="counter + 1"/>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="row" style="margin-top: 50px; border-top: 1px dashed #ccc; padding-top: 20px;">
+                            <div class="col-6 text-left" style="float: left; width: 50%; text-align: left;">
+                                <strong>Borrowing Employee Signature:</strong>
+                                <br/><br/>
+                                <p>Name: .....................................................</p>
+                                <p>Signature: .................................................</p>
+                                <p>Date: ..... / ..... / .......... </p>
+                            </div>
+                            <div class="col-6 text-right" style="float: right; width: 50%; text-align: left;">
+                                <strong>Company Management Approval:</strong>
+                                <br/><br/>
+                                <p>Name &amp; Position: .......................................</p>
+                                <p>Seal &amp; Signature: ......................................</p>
+                                <p>Date: ..... / ..... / .......... </p>
+                            </div>
+                        </div>
+
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>
