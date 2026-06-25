@@ -7,6 +7,7 @@ class EmployeeLoan(models.Model):
     _name = 'employee.loan'
     _inherit=["mail.thread","mail.activity.mixin"]
     # employee details
+    employee_id = fields.Many2one('hr.employee', string='Employee', tracking=True)
     department_id = fields.Many2one('hr.department', string="Department")
     job_id = fields.Many2one('hr.job', string="Job Position")
     # loan details
@@ -22,7 +23,6 @@ class EmployeeLoan(models.Model):
         ('paid','Paid'),
     ],required=True, tracking=True)
     line_ids = fields.One2many('loan.lines','loan_id', tracking=True)
-    employee_id = fields.Many2one('hr.employee', string='Employee', tracking=True)
     # Wizard
     reject_reason = fields.Text(string="Reject Reason", readonly=True)
     # الربط مع الحسابات
@@ -48,14 +48,14 @@ class EmployeeLoan(models.Model):
                 raise ValidationError("Loan amount can't be less than or equal zero")
             
             line_ids = [
-                # السطر الأول: المدين (حساب السلف للموظف)
+                # First line: Debtor (Employee advance account)
                 Command.create({
                     'name': f"Employee loan: {rec.employee_id.name}",
                     'account_id': rec.employee_id.loan_account_id.id,
                     'debit': rec.loan_amount,
                     'credit': 0.0,
                 }),
-                # السطر الثاني: الدائن (حساب البنك/الصندوق التابع لليومية)
+                # Line 2: Credit (Bank/Cash account of the journal)
                 Command.create({
                     'name': f"Employee loan payment: {rec.employee_id.name}",
                     'account_id': rec.journal_id.default_account_id.id,
@@ -140,51 +140,40 @@ class EmployeeLoan(models.Model):
             for line in unpaid_installments:
                 if not line.loan_id or not line.loan_id.journal_id or not line.loan_id.employee_id:
                     continue
-            # بناء القاموس الرئيسي لقيد السداد
                 move_vals = {
-                    'journal_id': line.loan_id.journal_id.id, # نفس اليومية (صندوق أو بنك)
-                    'date': fields.Date.today(),              # تاريخ إنشاء القيد (اليوم)
+                    'journal_id': line.loan_id.journal_id.id, 
+                    'date': fields.Date.today(),              
                     'ref': f"سداد قسط شهر {line.installment_date.strftime('%m/%Y')} - {line.loan_id.employee_id.name}",
-                    'move_type': 'entry',                     # قيد يومية عام
-            # بناء السطور الثنائية (المدين والدائن) بداخل حقل line_ids
+                    'move_type': 'entry',                     
                     'line_ids': [
-                        # (0, 0, {...}) تعني في أودو إنشاء سطر جديد في جدول العلاقات One2many
-                        # 🔵 السطر الأول: الطرف المدين (Debit) -> حساب الصندوق أو البنك دخلت إليه الأموال
+                        # 🔵 First line: Debit side -> The treasury or bank account into which the funds were deposited
                         (0, 0, {
                             'name': f"استقطاع قسط سلفة - {line.loan_id.employee_id.name}",
                             'partner_id': line.loan_id.employee_id.user_id.partner_id.id,
-                            'account_id': line.loan_id.journal_id.default_account_id.id, # الحساب الافتراضي لليومية (النقدية)
+                            'account_id': line.loan_id.journal_id.default_account_id.id, 
                             'debit': line.amount,
                             'credit': 0.0,
                         }),
-                        # 🔴 السطر الثاني: الطرف الدائن (Credit) -> حساب السلف ينخفض بقيمة القسط
+                        # 🔴 Second line: Credit side -> Loan account decreases by the installment amount
                         (0, 0, {
                             'name': f"تخفيض مديونية السلفة - {line.loan_id.employee_id.name}",
                             'partner_id': line.loan_id.employee_id.user_id.partner_id.id,
-                            'account_id': line.loan_id.employee_id.loan_account_id.id,   # حساب السلف الخاص بالموظف
+                            'account_id': line.loan_id.employee_id.loan_account_id.id,   
                             'debit': 0.0,
                             'credit': line.amount,
                         }),
                     ]
                 }
-                # إنشاء القيد الفعلي في قاعدة البيانات وترحيله فوراً
                 move = self.env['account.move'].create(move_vals)
-                move.action_post() # ترحيل القيد ليكون له أثر مالي رسمي
+                move.action_post() 
                 line.write({
-                'move_id': move.id # ربط السطر برقم القيد الذي سدده
+                'move_id': move.id 
                         })
-                # 1. بعد سطر ترحيل قيد السداد الفعلي: move.action_post()
-                # 2. تحديد سطر الدائن (Credit Line) من قيد السداد الجديد الذي تم إنشاؤه للتو
-                # نبحث بداخل السطور المولدّة للقيد الجديد عن السطر الذي يحتوي على قيمة في عمود الدائن (credit > 0)
                 new_credit_line = move.line_ids.filtered(lambda l: l.credit > 0)
-                # 3. تحديد سطر المدين (Debit Line) المقابل له من قيد إثبات السلفة الأصلي
-                # نذهب إلى السلفة الرئيسية المرتبطة بالقسط الحالي، ونبحث في قيدها الأصلي عن السطر المدين الخاص بالموظف
                 original_debit_line = line.loan_id.move_id.line_ids.filtered(
                     lambda l: l.debit > 0 and l.account_id == line.loan_id.employee_id.loan_account_id.id and not l.reconciled
                 )
-                # 4. دمج السطرين معاً واستدعاء دالة التسوية والمطابقة
                 if new_credit_line and original_debit_line:
-                    # نقوم بجمع السجلين بداخل Recordset واحد ثم نطبق الأمر
                     (new_credit_line + original_debit_line).reconcile()
 class LoanLines(models.Model):
     _name = 'loan.lines'
@@ -196,5 +185,4 @@ class LoanLines(models.Model):
         ('paid','Paid'),
     ],default='due')
     loan_id = fields.Many2one('employee.loan')
-    # أضف هذا السطر بداخل كلاس loan.lines في ملف البايثون الخاص بالحقول
     move_id = fields.Many2one('account.move', string="Journal Move", readonly=True)

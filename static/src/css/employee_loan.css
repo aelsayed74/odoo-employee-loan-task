@@ -1,13 +1,10 @@
-/* لتوسيط عناوين الجدول */
 .o_list_table th {
     text-align: center !important;
 }
 
-/* لتوسيط القيم داخل الجدول لكي تتطابق مع العناوين */
 .o_list_table td {
     text-align: center !important;
 }
-/* إجبار مؤشر البحث والنص داخل شريط البحث على البدء من اليسار */
 .o_searchview .o_searchview_input_container input,
 .o_searchview_input {
     text-align: left !important;
