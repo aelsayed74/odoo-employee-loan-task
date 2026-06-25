@@ -10,7 +10,8 @@
     Description text
     """,
     # data files always loaded at installation
-    'data': ["security/ir.model.access.csv",
+    'data': ["security/security.xml",
+             "security/ir.model.access.csv",
              "views/base_menu.xml",
              "views/employee_loan.xml",
              "views/hr_employee.xml",

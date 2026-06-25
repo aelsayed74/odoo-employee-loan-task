@@ -12,7 +12,7 @@ class EmployeeLoan(models.Model):
     # loan details
     loan_amount = fields.Float(required=True, tracking=True) 
     start_at = fields.Date(required=True, tracking=True)  
-    installments_nums = fields.Integer(required=True, tracking=True) 
+    installments_nums = fields.Integer(required=True, tracking=True, groups="employee_loan_task.employee_loan_manager_group") 
     monthly_Installment = fields.Float() # _compute field
     state = fields.Selection([
         ('draft','Draft'),
