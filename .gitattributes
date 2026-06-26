@@ -1,0 +1,23 @@
+# Odoo module file handling
+*.py text eol=lf
+*.xml text eol=lf
+*.csv text eol=lf
+*.md text eol=lf
+*.css text eol=lf
+*.js text eol=lf
+*.po text eol=lf
+*.pot text eol=lf
+*.svg text eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.pdf binary
+*.doc binary
+*.docx binary
+*.xls binary
+*.xlsx binary
+
+# Ensure shell scripts use LF
+*.sh text eol=lf
